@@ -1,0 +1,24 @@
+version: "3.5"
+services:
+  #######################################################
+  # Integration Test
+  #######################################################
+  integration-test:
+    build:
+      context: .
+      dockerfile: build/Dockerfile
+      args:
+        GO_BINARY: ./test/
+    entrypoint: sh -c 'while [ ! -f /ready/kafka ] && [ ! -f /ready/liquibase ]; do sleep 1; done; /app'
+    depends_on:
+      - go-interview-challenge
+    environment:
+      KAFKA_BROKER_HOSTS: kafka:29092
+      KAFKA_REGISTRY_URL: http://kafka:8081
+    volumes:
+      - private:/ready
+    networks:
+      - local
+
+volumes:
+  private:

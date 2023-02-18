@@ -1,0 +1,16 @@
+version: "3.5"
+services:
+  #######################################################
+  # go-interview-challenge (with live-reload)
+  #######################################################
+  go-interview-challenge:
+    build:
+      context: .
+      dockerfile: ./build/Dockerfile.dev
+    entrypoint: sh -c 'air'
+    volumes:
+      - private:/ready
+      - ./:/app
+
+volumes:
+  private:

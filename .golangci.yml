@@ -1,0 +1,47 @@
+linters:
+  disable-all: true
+  enable:
+    - bodyclose
+    - dogsled
+    - dupl
+    - errcheck
+    - exportloopref
+    - gochecknoglobals
+    - gochecknoinits
+    - gocognit
+    - goconst
+    - gocritic
+    - gocyclo
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - nakedret
+    - prealloc
+    - revive
+    - staticcheck
+    - stylecheck
+    - typecheck
+    - unconvert
+    - unparam
+    - unused
+    - whitespace
+issues:
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - gochecknoglobals
+        - goconst
+        - dupl
+        - gosec
+        - gocognit
+    - path: test/*
+      linters:
+        - gochecknoglobals
+        - goconst
+        - dupl
+        - gosec
+        - gocognit

@@ -1,0 +1,50 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-intraday-table
+      author: gpsinsight
+      comment: "intraday stock values"
+      changes:
+        - createTable:
+            tableName: intraday
+            columns:
+              - column:
+                  name: ticker
+                  type: text
+                  constraints:
+                    nullable: false
+              - column:
+                  name: timestamp
+                  type: timestamp
+                  constraints:
+                    nullable: false
+              - column:
+                  name: open
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: high
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: low
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: close
+                  type: double
+                  constraints:
+                    nullable: false
+              - column:
+                  name: volume
+                  type: int
+                  constraints:
+                    nullable: false
+              - column:
+                  name: inserted_dt
+                  type: timestamp
+                  defaultValueComputed: CURRENT_TIMESTAMP
+                  constraints:
+                    nullable: false

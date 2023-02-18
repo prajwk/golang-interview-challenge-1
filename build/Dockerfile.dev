@@ -1,0 +1,15 @@
+# Download the base image for building Go apps
+FROM golang:1.19-alpine as builder
+
+# Get dependencies
+RUN apk add --no-cache --virtual build-deps \
+    make \
+    gcc \
+    build-base \
+    curl
+
+RUN curl -fLo install.sh https://raw.githubusercontent.com/cosmtrek/air/master/install.sh \
+    && chmod +x install.sh && sh install.sh && cp ./bin/air /bin/air
+
+# Set the working directory
+WORKDIR /app
