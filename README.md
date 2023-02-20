@@ -1,18 +1,51 @@
-# go-interview-challenge
+# Go Interview Challenge
 
-Interview Challenge for the GPSInsight api team. This project is a template for candidates to finish and change. 
-As part of this challenge, the candidate will be using kafka, liquibase, and.... They should be prepared to talk about their solution and their thoughts behind it.
+Template interview challenge for the GPS Insight api team
+
+This repo contains a little demo service for pulling data about intraday stock values off of a kafka stream and inserting them into a postgres database. The service also has a rest api for making that data consumable by clients.
+
+
+## What is the point of this challenge?
+
+- Demonstrate an ability to quickly get comfortable in a new codebase and make contributions
+- Demonstrate familiarity with the technologies we use every day
+- Show us your approach to solving problems
+
+
+### Prerequisites
+
+- [Go](https://go.dev/doc/install)
+- [Docker](https://docs.docker.com/get-docker/)
+
+
+## What will you be implementing?
+
+- Consume kafka stream and write to postgres database
+- Implement REST endpoint to get stock info from the database
+
+![go-interview-challenge visualization](/overview.png "go-interview-challenge visualization")
+
+If you are looking for ways to spice up your project here are some ideas...
+- Try using gRPC or GraphQL instead of REST
+- Show us your take on testing
+- Allow for the data to be queried with filters/pagination/etc.
+
+
+## How long should this challenge take?
+
+You are welcome to put in as much time as you like but you should be able to finish it within an hour or so
 
 
 ## Getting Started
 
-Download and unpack zip of repository
+- Download and unpack zip of repository
 
-TODO: Implement REST endpoint to get Stock info from the database
+<img src="/download.png" alt="download" width="400">
 
-TODO: Consume stream and write to database
+<p></p>
 
-Optional: implement gRPC instead of REST
+- Search the repo for `TODO:` tags (there should be two) and follow the instructions
+
 
 ### Running locally
 
@@ -21,36 +54,10 @@ To start local development environment with sample data and live reload of go-in
 make run
 ```
 
-### Prerequisites
 
-[Go](https://go.dev/doc/install)
+## Generating data
 
-[Docker](https://docs.docker.com/get-docker/)
-
-### Dependencies
-
-- Kafka
-- Postgres
-
-## Visualization
-
-![go-interview-challenge visualization](/go-interview-challenge.png "go-interview-challenge visualization")
-
-
-## Running the tests
-
-To run the tests, use the command 
-``` 
-make test
+To generate message on the kafka topic, use the command
 ```
-
-## Tips
-
-runs code formatting and cleans up deps
+make generate-messages
 ```
-make tidy
-```
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details

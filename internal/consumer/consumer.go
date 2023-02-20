@@ -63,5 +63,7 @@ func (kc *KafkaConsumer) processMessage(ctx context.Context, msg kafka.Message) 
 		 * - insert data into postgres table
 	*/
 
+	kc.logger.Infof("received message: %s", string(msg.Key))
+
 	return nil
 }

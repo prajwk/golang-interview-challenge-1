@@ -1,109 +1,94 @@
-// package main
-//
-// func main () {
-//     // connect to kafka
-//     kafkaReader := kafka.NewReader(kafka.ReaderConfig{
-// 		Brokers:     cfg.Kafka.Brokers,
-// 		GroupID:     cfg.Kafka.GroupID,
-// 		GroupTopics: []string{cfg.Kafka.Topics.IntradayValues},
-// 		ErrorLogger: kafka.LoggerFunc(log.Errorf),
-// 	})
-// 	defer kafkaReader.Close()
-//
-// 	client, err := schemaregistry.NewClient(schemaregistry.NewConfig(cfg.Kafka.SchemaRegistry.URL))
-// 	if err != nil {
-// 		log.WithError(err).Fatal("not connected to schema registry")
-// 	}
-//
-//     // read from file
-//     // publish to kafka
-//
-// }
-
-
 package main
 
 import (
-    "encoding/json"
-    "fmt"
-    "io/ioutil"
-    "log"
+	"encoding/json"
+	"io/ioutil"
+	"strconv"
 
-    "github.com/confluentinc/confluent-kafka-go/kafka"
-    "github.com/confluentinc/confluent-kafka-go/schemaregistry"
-    "github.com/confluentinc/confluent-kafka-go/schemaregistry/serde"
+	"github.com/confluentinc/confluent-kafka-go/schemaregistry"
+	"github.com/confluentinc/confluent-kafka-go/schemaregistry/serde"
+	"github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/protobuf"
+	"github.com/gpsinsight/go-interview-challenge/internal/config"
+	"github.com/gpsinsight/go-interview-challenge/pkg/messages"
+	"github.com/kelseyhightower/envconfig"
+	"github.com/segmentio/kafka-go"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/net/context"
 )
 
+type IntradayValue struct {
+	Open   string `json:"open"`
+	High   string `json:"high"`
+	Low    string `json:"low"`
+	Close  string `json:"close"`
+	Volume string `json:"volume"`
+}
+
 func main() {
-    // Define Kafka configuration
-    kafkaConf := &kafka.ConfigMap{
-        "bootstrap.servers": "localhost:9092",
-        "acks":              "all",
-    }
+	var cfg config.Config
+	_ = envconfig.Process("", &cfg)
+	log := logrus.NewEntry(logrus.New())
 
-    // Create Kafka producer
-    producer, err := kafka.NewProducer(kafkaConf)
-    if err != nil {
-        log.Fatalf("Failed to create producer: %s", err)
-    }
-    defer producer.Close()
+	w := &kafka.Writer{
+		Addr:                   kafka.TCP(cfg.Kafka.Brokers...),
+		AllowAutoTopicCreation: true,
+		Balancer:               &kafka.Hash{},
+		Topic:                  cfg.Kafka.Topics.IntradayValues,
+	}
+	defer w.Close()
 
-    // Define schema registry configuration
-    schemaRegistryConf := &schemaregistry.Config{
-        URL: "http://localhost:8081",
-    }
+	client, err := schemaregistry.NewClient(schemaregistry.NewConfig(cfg.Kafka.SchemaRegistry.URL))
+	if err != nil {
+		log.WithError(err).Fatal("not connected to schema registry")
+	}
+	serConfig := protobuf.NewSerializerConfig()
+	serConfig.AutoRegisterSchemas = true
+	protoSerializer, err := protobuf.NewSerializer(client, serde.ValueSerde, serConfig)
+	if err != nil {
+		log.WithError(err).Error("failed to set up serializer")
+		return
+	}
 
-    // Create schema registry client
-    schemaRegistryClient, err := schemaregistry.NewClient(schemaRegistryConf)
-    if err != nil {
-        log.Fatalf("Failed to create schema registry client: %s", err)
-    }
-    defer schemaRegistryClient.Close()
+	jsonFile, err := ioutil.ReadFile("test/testdata/intraday-values.json")
+	if err != nil {
+		log.Fatalf("Failed to read JSON file: %s", err)
+	}
 
-    // Read JSON file
-    jsonFile, err := ioutil.ReadFile("test/testdata/intraday-values.json")
-    if err != nil {
-        log.Fatalf("Failed to read JSON file: %s", err)
-    }
+	var data map[string]IntradayValue
+	err = json.Unmarshal(jsonFile, &data)
+	if err != nil {
+		log.Fatalf("Failed to parse JSON: %s", err)
+	}
 
-    // Parse JSON
-    var data interface{}
-    err = json.Unmarshal(jsonFile, &data)
-    if err != nil {
-        log.Fatalf("Failed to parse JSON: %s", err)
-    }
+	for key, value := range data {
+		open, _ := strconv.ParseFloat(value.Open, 64)
+		high, _ := strconv.ParseFloat(value.High, 64)
+		low, _ := strconv.ParseFloat(value.Low, 64)
+		close, _ := strconv.ParseFloat(value.Close, 64)
+		volume, _ := strconv.ParseInt(value.Volume, 10, 64)
 
-    // Get schema ID from schema registry
-    schemaID, err := schemaRegistryClient.GetLatestSchemaID("example-value")
-    if err != nil {
-        log.Fatalf("Failed to get schema ID: %s", err)
-    }
+		kafkaValue := &messages.IntradayValue{
+			Open:      open,
+			High:      high,
+			Low:       low,
+			Close:     close,
+			Volume:    volume,
+			Timestamp: key,
+			Ticker:    "IBM",
+		}
 
-    // Serialize data using Avro schema
-    avroBytes, err := serde.AvroFromNative(schemaRegistryClient, schemaID, data)
-    if err != nil {
-        log.Fatalf("Failed to serialize data: %s", err)
-    }
+		payload, err := protoSerializer.Serialize(cfg.Kafka.Topics.IntradayValues, kafkaValue)
+		if err != nil {
+			log.WithError(err).Fatal("failed to serialize")
+		}
 
-    // Publish data to Kafka topic
-    err = producer.Produce(&kafka.Message{
-        TopicPartition: kafka.TopicPartition{
-            Topic:     &topicName,
-            Partition: kafka.PartitionAny,
-        },
-        Key:   nil,
-        Value: avroBytes,
-        Headers: []kafka.Header{
-            kafka.Header{
-                Key:   "schemaID",
-                Value: []byte(fmt.Sprintf("%d", schemaID)),
-            },
-        },
-    }, nil)
+		msg := kafka.Message{
+			Key:   []byte(key),
+			Value: payload,
+		}
 
-    if err != nil {
-        log.Fatalf("Failed to publish message: %s", err)
-    }
+		w.WriteMessages(context.Background(), msg)
 
-    log.Printf("Message published successfully to topic %s", topicName)
+		log.Infof("Successfully published message: %s", key)
+	}
 }
