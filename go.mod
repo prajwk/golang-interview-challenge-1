@@ -10,7 +10,7 @@ require (
 	github.com/lib/pq v1.10.7
 	github.com/segmentio/kafka-go v0.4.38
 	github.com/sirupsen/logrus v1.9.0
-	golang.org/x/net v0.3.0
+	golang.org/x/net v0.17.0
 	google.golang.org/protobuf v1.28.1
 )
 
@@ -23,6 +23,6 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.12 // indirect
 	github.com/pierrec/lz4/v4 v4.1.15 // indirect
 	github.com/stretchr/testify v1.8.1 // indirect
-	golang.org/x/sys v0.3.0 // indirect
+	golang.org/x/sys v0.13.0 // indirect
 	google.golang.org/genproto v0.0.0-20220503193339-ba3ae3f07e29 // indirect
 )
