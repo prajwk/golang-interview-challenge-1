@@ -3,8 +3,10 @@ package consumer
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/confluentinc/confluent-kafka-go/schemaregistry/serde/protobuf"
+	"github.com/gpsinsight/go-interview-challenge/pkg/messages"
 	"github.com/jmoiron/sqlx"
 	"github.com/segmentio/kafka-go"
 	"github.com/sirupsen/logrus"
@@ -57,13 +59,22 @@ func (kc *KafkaConsumer) Run(ctx context.Context) {
 }
 
 func (kc *KafkaConsumer) processMessage(ctx context.Context, msg kafka.Message) error {
-	/**
-	   * TODO:
-		 * - deserialize protobuf message
-		 * - insert data into postgres table
-	*/
-
+	// Deserialize the Protobuf message
+	intradayVal, err := kc.deserializer.Deserialize(kc.reader.Config().Topic, msg.Value)
+	if err != nil {
+		return fmt.Errorf("failed to deserialize message: %w", err)
+	}
+	data, ok := intradayVal.(*messages.IntradayValue)
+	if !ok {
+		return fmt.Errorf("failed to deserialize message: not of type IntradayValue")
+	}
+	// Insert the deserialized data into the PostgreSQL table
+	query := `INSERT INTO intraday (ticker, timestamp, open, high, low, close, volume) VALUES ($1, $2, $3, $4, $5, $6, $7)`
+	_, err = kc.db.ExecContext(ctx, query, data.Ticker, data.Timestamp, data.Open, data.High, data.Low, data.Close, data.Volume)
+	if err != nil {
+		return fmt.Errorf("failed to insert data into database: %w", err)
+	}
 	kc.logger.Infof("received message: %s", string(msg.Key))
-
+	kc.logger.Infof("Inserted data: ticker=%s, timestamp=%s, open=%f, high=%f, low=%f, close=%f, volume=%d into Postgresql", data.Ticker, data.Timestamp, data.Open, data.High, data.Low, data.Close, data.Volume)
 	return nil
 }

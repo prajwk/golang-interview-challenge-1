@@ -81,7 +81,7 @@ func main() {
 
 	log.Info("Starting up go-interview-challenge")
 
-	srvr := server.New(cfg, log)
+	srvr := server.New(cfg, log, db)
 	defer func() {
 		err := srvr.Shutdown(context.Background())
 		if err != nil {
